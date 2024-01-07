@@ -1,0 +1,26 @@
+From 570161a376d5faee036108c580cbbc22046d77e2 Mon Sep 17 00:00:00 2001
+From: Android Build Server 2 <build@AndroidBuild-2>
+Date: Fri, 5 Jan 2024 07:45:37 +0000
+Subject: [PATCH] enable audio aidl
+
+Change-Id: I8396dbc632f39a099842fa8c0d99faa05898971b
+---
+ media/java/android/media/AudioHalVersionInfo.java | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/media/java/android/media/AudioHalVersionInfo.java b/media/java/android/media/AudioHalVersionInfo.java
+index 985a7584ffe2..ddc32af82011 100644
+--- a/media/java/android/media/AudioHalVersionInfo.java
++++ b/media/java/android/media/AudioHalVersionInfo.java
+@@ -79,7 +79,7 @@ public final class AudioHalVersionInfo implements Parcelable, Comparable<AudioHa
+      */
+     // TODO: add AIDL_1_0 with sAudioHALVersions.
+     public static final @NonNull List<AudioHalVersionInfo> VERSIONS =
+-            List.of(HIDL_7_1, HIDL_7_0, HIDL_6_0, HIDL_5_0, HIDL_4_0);
++            List.of(AIDL_1_0, HIDL_7_1, HIDL_7_0, HIDL_6_0, HIDL_5_0, HIDL_4_0);
+ 
+     private static final String TAG = "AudioHalVersionInfo";
+     private AudioHalVersion mHalVersion = new AudioHalVersion();
+-- 
+2.39.2
+

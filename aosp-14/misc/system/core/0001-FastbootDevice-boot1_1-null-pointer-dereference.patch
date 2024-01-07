@@ -1,0 +1,33 @@
+From f61ce2580f2904886de8825f613aecc5dc2df8f7 Mon Sep 17 00:00:00 2001
+From: Arun Sharma <arsharma@google.com>
+Date: Tue, 3 Oct 2023 14:55:48 -0700
+Subject: [PATCH 1/2] FastbootDevice::boot1_1 null pointer dereference
+
+FastbootDevice::boot1_1 attempts to dereference a null pointer when the
+boot_control_hal_ is not set. It needs a guard statement to prevent
+that.
+
+Test: Manually tested on device without BootControl.
+Bug: 301682120
+Change-Id: Id86bcb915c8e2857bda26f64738dd5b643048e98
+---
+ fastboot/device/fastboot_device.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/fastboot/device/fastboot_device.cpp b/fastboot/device/fastboot_device.cpp
+index 6b6a9820e2..0dc4e97640 100644
+--- a/fastboot/device/fastboot_device.cpp
++++ b/fastboot/device/fastboot_device.cpp
+@@ -151,7 +151,8 @@ std::string FastbootDevice::GetCurrentSlot() {
+ }
+ 
+ BootControlClient* FastbootDevice::boot1_1() const {
+-    if (boot_control_hal_->GetVersion() >= android::hal::BootControlVersion::BOOTCTL_V1_1) {
++    if (boot_control_hal_ &&
++        boot_control_hal_->GetVersion() >= android::hal::BootControlVersion::BOOTCTL_V1_1) {
+         return boot_control_hal_.get();
+     }
+     return nullptr;
+-- 
+2.39.2
+

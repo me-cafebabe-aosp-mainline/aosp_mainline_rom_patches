@@ -1,0 +1,120 @@
+From 23619f759cd2042c8dea5b6a6efe653690712e4f Mon Sep 17 00:00:00 2001
+From: Yumi Yukimura <me.cafebabe@gmail.com>
+Date: Fri, 5 Jan 2024 05:06:44 +0800
+Subject: [PATCH 2/4] build: Allow to build vendor ramdisk image independent of
+ vendor boot image
+
+Change-Id: I59196df71a558d157a5e44ab576013e33cf313fd
+---
+ core/Makefile        |  8 ++++++--
+ core/board_config.mk | 43 +++++++++++++++++++++++++++----------------
+ core/product.mk      |  1 +
+ 3 files changed, 34 insertions(+), 18 deletions(-)
+
+diff --git a/core/Makefile b/core/Makefile
+index e0b41a0a0b..c505bc2f00 100644
+--- a/core/Makefile
++++ b/core/Makefile
+@@ -1366,9 +1366,9 @@ endif # BOARD_PREBUILT_INIT_BOOT_IMAGE
+ endif # BUILDING_INIT_BOOT_IMAGE is not true
+ 
+ # -----------------------------------------------------------------
+-# vendor boot image
++# vendor ramdisk image
+ INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_VENDOR_RAMDISK_OUT)/%, $(INSTALLED_FILES_OUTSIDE_IMAGES))
+-ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
++ifeq ($(BUILDING_VENDOR_RAMDISK_IMAGE),true)
+ 
+ INTERNAL_VENDOR_RAMDISK_FILES := $(filter $(TARGET_VENDOR_RAMDISK_OUT)/%, \
+     $(ALL_DEFAULT_INSTALLED_MODULES))
+@@ -1409,7 +1409,11 @@ $(INSTALLED_FILES_FILE_VENDOR_RAMDISK): $(INTERNAL_VENDOR_RAMDISK_FILES) $(FILES
+ 
+ $(eval $(call declare-0p-target,$(INSTALLED_FILES_FILE_VENDOR_RAMDISK)))
+ $(eval $(call declare-0p-target,$(INSTALLED_FILES_JSON_VENDOR_RAMDISK)))
++endif # BUILDING_VENDOR_RAMDISK_IMAGE
+ 
++# -----------------------------------------------------------------
++# vendor boot image
++ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
+ ifdef BOARD_INCLUDE_DTB_IN_BOOTIMG
+   ifneq ($(BUILDING_VENDOR_KERNEL_BOOT_IMAGE),true)
+     # If we have vendor_kernel_boot partition, we migrate dtb image to that image
+diff --git a/core/board_config.mk b/core/board_config.mk
+index fae7aaa2c0..41bff1bfeb 100644
+--- a/core/board_config.mk
++++ b/core/board_config.mk
+@@ -552,6 +552,15 @@ else ifeq ($(PRODUCT_BUILD_RAMDISK_IMAGE),false)
+ endif
+ .KATI_READONLY := BUILDING_RAMDISK_IMAGE
+ 
++# Are we building a vendor ramdisk image
++BUILDING_VENDOR_RAMDISK_IMAGE :=
++ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
++  BUILDING_VENDOR_RAMDISK_IMAGE := true
++else ifeq ($(PRODUCT_BUILD_VENDOR_RAMDISK_IMAGE),true)
++  BUILDING_VENDOR_RAMDISK_IMAGE := true
++endif
++.KATI_READONLY := BUILDING_VENDOR_RAMDISK_IMAGE
++
+ # Are we building a debug vendor_boot image
+ BUILDING_DEBUG_VENDOR_BOOT_IMAGE :=
+ # Can't build vendor_boot-debug.img if we're not building a ramdisk.
+@@ -1035,25 +1044,27 @@ ifndef BUILDING_RECOVERY_IMAGE
+   endif
+ endif
+ 
+-ifndef BUILDING_VENDOR_BOOT_IMAGE
++ifndef BUILDING_VENDOR_RAMDISK_IMAGE
+   ifeq (true,$(BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT))
+-    $(error Should not set BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT if not building vendor_boot image)
++    $(error Should not set BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT if not building vendor_boot or vendor ramdisk image)
+   endif
+   ifdef BOARD_VENDOR_RAMDISK_FRAGMENTS
+-    $(error Should not set BOARD_VENDOR_RAMDISK_FRAGMENTS if not building vendor_boot image)
+-  endif
+-else # BUILDING_VENDOR_BOOT_IMAGE
+-  ifneq (,$(call math_lt,$(BOARD_BOOT_HEADER_VERSION),4))
+-    ifdef BOARD_VENDOR_RAMDISK_FRAGMENTS
+-      $(error Should not set BOARD_VENDOR_RAMDISK_FRAGMENTS if \
+-        BOARD_BOOT_HEADER_VERSION is less than 4)
+-    endif
+-    ifeq (true,$(BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT))
+-      $(error Should not set BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT if \
+-        BOARD_BOOT_HEADER_VERSION is less than 4)
+-    endif
+-  endif
+-endif # BUILDING_VENDOR_BOOT_IMAGE
++    $(error Should not set BOARD_VENDOR_RAMDISK_FRAGMENTS if not building vendor_boot or vendor ramdisk image)
++  endif
++else # BUILDING_VENDOR_RAMDISK_IMAGE
++  ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
++    ifneq (,$(call math_lt,$(BOARD_BOOT_HEADER_VERSION),4))
++      ifdef BOARD_VENDOR_RAMDISK_FRAGMENTS
++        $(error Should not set BOARD_VENDOR_RAMDISK_FRAGMENTS if \
++          BOARD_BOOT_HEADER_VERSION is less than 4)
++      endif
++      ifeq (true,$(BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT))
++        $(error Should not set BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT if \
++          BOARD_BOOT_HEADER_VERSION is less than 4)
++      endif
++    endif # BOARD_BOOT_HEADER_VERSION
++  endif # BUILDING_VENDOR_BOOT_IMAGE
++endif # BUILDING_VENDOR_RAMDISK_IMAGE
+ 
+ ifneq ($(words $(BOARD_VENDOR_RAMDISK_FRAGMENTS)),$(words $(sort $(BOARD_VENDOR_RAMDISK_FRAGMENTS))))
+   $(error BOARD_VENDOR_RAMDISK_FRAGMENTS has duplicate entries: $(BOARD_VENDOR_RAMDISK_FRAGMENTS))
+diff --git a/core/product.mk b/core/product.mk
+index 30d7dcd115..3a050e6f98 100644
+--- a/core/product.mk
++++ b/core/product.mk
+@@ -335,6 +335,7 @@ _product_single_value_vars += PRODUCT_BUILD_BOOT_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_INIT_BOOT_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_DEBUG_BOOT_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_VENDOR_BOOT_IMAGE
++_product_single_value_vars += PRODUCT_BUILD_VENDOR_RAMDISK_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_VENDOR_KERNEL_BOOT_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_DEBUG_VENDOR_BOOT_IMAGE
+ _product_single_value_vars += PRODUCT_BUILD_VBMETA_IMAGE
+-- 
+2.39.2
+

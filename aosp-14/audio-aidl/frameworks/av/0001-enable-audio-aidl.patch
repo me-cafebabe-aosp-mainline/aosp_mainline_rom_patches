@@ -1,0 +1,29 @@
+From ede30c42f987258377b65dba5215609b2fddec2b Mon Sep 17 00:00:00 2001
+From: Android Build Server 2 <build@AndroidBuild-2>
+Date: Fri, 5 Jan 2024 07:44:56 +0000
+Subject: [PATCH] enable audio aidl
+
+Change-Id: I66c1777850e7c7f52329e9e5eb5b7fe241d1e060
+---
+ media/libaudiohal/FactoryHal.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/media/libaudiohal/FactoryHal.cpp b/media/libaudiohal/FactoryHal.cpp
+index f88915d7f4..5a2e59e075 100644
+--- a/media/libaudiohal/FactoryHal.cpp
++++ b/media/libaudiohal/FactoryHal.cpp
+@@ -50,9 +50,9 @@ using InterfaceName = std::pair<std::string, std::string>;
+  * This list need to keep sync with AudioHalVersionInfo.VERSIONS in
+  * media/java/android/media/AudioHalVersionInfo.java.
+  */
+-static const std::array<AudioHalVersionInfo, 5> sAudioHALVersions = {
++static const std::array<AudioHalVersionInfo, 6> sAudioHALVersions = {
+     // TODO: remove this comment to get AIDL
+-    // AudioHalVersionInfo(AudioHalVersionInfo::Type::AIDL, 1, 0),
++    AudioHalVersionInfo(AudioHalVersionInfo::Type::AIDL, 1, 0),
+     AudioHalVersionInfo(AudioHalVersionInfo::Type::HIDL, 7, 1),
+     AudioHalVersionInfo(AudioHalVersionInfo::Type::HIDL, 7, 0),
+     AudioHalVersionInfo(AudioHalVersionInfo::Type::HIDL, 6, 0),
+-- 
+2.39.2
+
